@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="基于 Seam Carving 的内容保持型图像拉伸算法项目介绍网页。页面使用论文中的原始实验图片、折线图、柱状图和实验表格。" />
+  <title>基于 Seam Carving 的内容保持型图像拉伸算法</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <a class="skip-link" href="#main">跳到正文</a>
+
+  <header class="site-header">
+    <div class="container nav-wrap">
+      <a class="brand" href="#top" aria-label="返回页面顶部">
+        <span class="brand-mark">SC</span>
+        <span>
+          <strong>Seam Carving+</strong>
+          <small>Content-Aware Retargeting</small>
+        </span>
+      </a>
+
+      <nav class="site-nav" aria-label="主导航">
+        <a href="#overview">项目概览</a>
+        <a href="#method">算法方法</a>
+        <a href="#results">实验结果</a>
+        <a href="#gallery">原图展示</a>
+        <a href="#future">总结展望</a>
+      </nav>
+
+      <a class="nav-button" href="https://github.com/YOUR_NAME/YOUR_REPO" target="_blank" rel="noreferrer">View on GitHub</a>
+    </div>
+  </header>
+
+  <main id="main">
+    <section class="hero" id="top">
+      <div class="hero-grid container">
+        <div class="hero-copy">
+          <span class="eyebrow">COMPUTER VISION · IMAGE RETARGETING</span>
+          <h1>基于 Seam Carving 的<br /><span>内容保持型图像拉伸算法</span></h1>
+          <p class="hero-lead">
+            面向图像横向扩展任务，在经典 Seam Carving 基础上引入
+            <strong>ROI 区域保护</strong>、<strong>Seam 路径平滑</strong>、
+            <strong>列惩罚</strong>与<strong>多带扩展</strong>，减少主体形变、局部过度拉伸和条纹伪影。
+          </p>
+
+          <div class="hero-actions">
+            <a class="button button-primary" href="#results">查看实验结果</a>
+            <a class="button button-secondary" href="https://github.com/YOUR_NAME/YOUR_REPO" target="_blank" rel="noreferrer">获取源代码</a>
+          </div>
+
+          <div class="hero-meta" aria-label="项目信息">
+            <div><span>Dataset</span><strong>mini-BSDS500</strong></div>
+            <div><span>Task</span><strong>Horizontal Expansion</strong></div>
+            <div><span>Extension</span><strong>+80 px</strong></div>
+          </div>
+        </div>
+
+        <figure class="media-frame media-frame-hero paper-figure">
+          <img src="images/sample-36-comparison.png" alt="论文中 sample_36 的原图、普通拉伸、原始 Seam Carving 和改进方法横向扩展结果对比" />
+          <figcaption>
+            论文原图：sample_36 横向扩展效果对比。排列顺序为原始图像、普通线性拉伸、原始 Seam Carving、本文改进方法。
+          </figcaption>
+        </figure>
+      </div>
+    </section>
+
+    <section class="stats-section" aria-label="核心实验指标">
+      <div class="container stats-grid">
+        <article class="stat-card">
+          <span class="stat-label">平均 mid_maxfreq</span>
+          <strong>19.92 <i>→</i> 5.52</strong>
+          <p>单一列被 seam 反复经过的最大次数明显降低。</p>
+        </article>
+        <article class="stat-card">
+          <span class="stat-label">平均 mid_span</span>
+          <strong>62.44 <i>→</i> 465.68</strong>
+          <p>seam 在图像宽度方向上的分布范围显著扩大。</p>
+        </article>
+        <article class="stat-card">
+          <span class="stat-label">实验规模</span>
+          <strong>25 <i>images</i></strong>
+          <p>从 BSDS500 中选取人物、动物、建筑和自然场景。</p>
+        </article>
+      </div>
+    </section>
+
+    <section class="section" id="overview">
+      <div class="container split-layout">
+        <div class="section-heading sticky-heading">
+          <span class="eyebrow">01 · OVERVIEW</span>
+          <h2>为什么需要内容感知拉伸？</h2>
+          <p>
+            普通非等比缩放会均匀改变所有像素的位置，容易导致人脸、身体、建筑等重要结构被压扁或拉长。
+            Seam Carving 根据图像能量选择低重要度路径，对图像尺寸进行内容感知调整。
+          </p>
+        </div>
+
+        <div class="content-stack">
+          <article class="feature-row">
+            <span class="feature-index">A</span>
+            <div><h3>传统拉伸的局限</h3><p>统一缩放无法区分主体与背景，重要目标和低纹理区域会被同时拉伸，导致明显几何畸变。</p></div>
+          </article>
+          <article class="feature-row">
+            <span class="feature-index">B</span>
+            <div><h3>原始 Seam Carving 的问题</h3><p>连续插入 seam 时，算法可能反复选择少数低能量列，形成局部过度拉伸、条纹伪影和结构破坏。</p></div>
+          </article>
+          <article class="feature-row">
+            <span class="feature-index">C</span>
+            <div><h3>本项目的目标</h3><p>让新增像素更均匀地分布在多个低重要度区域，同时显式保护人物、建筑等关键内容。</p></div>
+          </article>
+
+          <div class="before-after-grid">
+            <figure class="media-frame paper-figure compact-figure">
+              <img src="images/lenna-original-result.png" alt="论文中的 Lenna 原始 Seam Carving 扩展结果" />
+              <figcaption>论文原图：原始算法反复插入同一 seam，右侧区域被过度拉长。</figcaption>
+            </figure>
+            <figure class="media-frame paper-figure compact-figure">
+              <img src="images/lenna-improved-result.png" alt="论文中的 Lenna 改进 Seam Carving 扩展结果" />
+              <figcaption>论文原图：改进算法分散 seam 分布，并保护人物主体。</figcaption>
+            </figure>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section section-dark" id="method">
+      <div class="container">
+        <div class="section-heading section-heading-wide">
+          <span class="eyebrow">02 · METHOD</span>
+          <h2>算法流程与四项改进</h2>
+          <p>基础流程由 Sobel 能量计算、动态规划寻找最小能量 seam、路径插入组成；在此基础上，通过四个模块提升扩展质量。</p>
+        </div>
+
+        <div class="process-flow" aria-label="改进 Seam Carving 算法流程">
+          <div><span>01</span><strong>输入图像</strong><small>读取图像与目标扩展宽度</small></div>
+          <b>→</b>
+          <div><span>02</span><strong>能量图计算</strong><small>使用 Sobel 梯度衡量像素重要性</small></div>
+          <b>→</b>
+          <div><span>03</span><strong>ROI 能量加权</strong><small>提高重要区域被选中的代价</small></div>
+          <b>→</b>
+          <div><span>04</span><strong>Seam 搜索</strong><small>动态规划寻找低能量路径</small></div>
+          <b>→</b>
+          <div><span>05</span><strong>平滑与惩罚</strong><small>平滑路径并抑制列集中</small></div>
+          <b>→</b>
+          <div><span>06</span><strong>多带插入</strong><small>在多个低能量区域分散扩展</small></div>
+        </div>
+
+        <div class="method-grid">
+          <article class="method-card">
+            <span class="method-number">01</span>
+            <h3>ROI 区域保护</h3>
+            <p>对人物面部、衣物、建筑等重要区域施加更高能量，使 seam 更难穿过关键内容。</p>
+            <code>E'(x,y) = E(x,y) + λ · M<sub>ROI</sub>(x,y)</code>
+          </article>
+          <article class="method-card">
+            <span class="method-number">02</span>
+            <h3>Seam 路径平滑</h3>
+            <p>通过平滑窗口约束路径变化，减轻像素插入后出现的不连续、突兀边缘和锯齿感。</p>
+            <code>s' = Smooth(s, window)</code>
+          </article>
+          <article class="method-card">
+            <span class="method-number">03</span>
+            <h3>列惩罚机制</h3>
+            <p>每次插入后提高已频繁经过列的代价，避免 seam 长期聚集于同一位置。</p>
+            <code>E'' = E' + α · P<sub>column</sub></code>
+          </article>
+          <article class="method-card">
+            <span class="method-number">04</span>
+            <h3>多带扩展</h3>
+            <p>在多个低能量区域之间分散选择 seam，使大幅横向扩展时的新增像素分布更加均匀。</p>
+            <code>B = {s₁, s₂, …, s<sub>k</sub>}</code>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="results">
+      <div class="container">
+        <div class="section-heading section-heading-wide">
+          <span class="eyebrow">03 · EXPERIMENTS</span>
+          <h2>实验设置、原始图表与完整数据</h2>
+          <p>对 25 张 mini-BSDS500 图像统一进行水平扩展，宽度增加 80 像素；对比普通非等比线性拉伸、原始 Seam Carving 和本文改进方法。</p>
+        </div>
+
+        <div class="experiment-info">
+          <article><span>Dataset</span><strong>BSDS500 子集</strong><p>人物、动物、建筑、自然场景</p></article>
+          <article><span>Samples</span><strong>25 张</strong><p>统一参数条件</p></article>
+          <article><span>Resize</span><strong>Width +80 px</strong><p>高度保持不变</p></article>
+          <article><span>Metrics</span><strong>mid_maxfreq / mid_span</strong><p>集中程度 / 分布跨度</p></article>
+        </div>
+
+        <div class="chart-grid">
+          <figure class="media-frame paper-figure">
+            <img src="images/chart-mid-maxfreq-line.png" alt="论文图 4-5：25 张图片的 mid_maxfreq 对比折线图" />
+            <figcaption>论文图 4-5：25 张图片的 mid_maxfreq 对比折线图（越小越好）。</figcaption>
+          </figure>
+          <figure class="media-frame paper-figure">
+            <img src="images/chart-mid-span-line.png" alt="论文图 4-6：25 张图片的 mid_span 对比折线图" />
+            <figcaption>论文图 4-6：25 张图片的 mid_span 对比折线图（越大越好）。</figcaption>
+          </figure>
+          <figure class="media-frame paper-figure">
+            <img src="images/chart-mid-maxfreq-average.png" alt="论文图 4-7：mid_maxfreq 平均值对比柱状图" />
+            <figcaption>论文图 4-7：平均 mid_maxfreq 由 19.92 降低至 5.52。</figcaption>
+          </figure>
+          <figure class="media-frame paper-figure">
+            <img src="images/chart-mid-span-average.png" alt="论文图 4-8：mid_span 平均值对比柱状图" />
+            <figcaption>论文图 4-8：平均 mid_span 由 62.44 提升至 465.68。</figcaption>
+          </figure>
+        </div>
+
+        <div class="metrics-table-wrap summary-table-wrap">
+          <table class="metrics-table">
+            <caption>表 4-2　两种方法在 25 张图像上的平均统计结果</caption>
+            <thead><tr><th>方法</th><th>mid_maxfreq ↓</th><th>mid_span ↑</th></tr></thead>
+            <tbody>
+              <tr><td>原始 Seam Carving</td><td>19.92</td><td>62.44</td></tr>
+              <tr class="highlight-row"><td>本文改进方法</td><td>5.52</td><td>465.68</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <details class="full-table" open>
+          <summary>查看论文表 4-1：25 张测试图像的完整统计数据</summary>
+          <div class="metrics-table-wrap">
+            <table class="metrics-table detailed-table">
+              <caption>表 4-1　原始 Seam Carving 与改进方法的 mid_maxfreq、mid_span 统计结果</caption>
+              <thead>
+                <tr>
+                  <th rowspan="2">图片文件名</th>
+                  <th colspan="2">mid_maxfreq ↓</th>
+                  <th colspan="2">mid_span ↑</th>
+                </tr>
+                <tr>
+                  <th>原始算法</th><th>改进算法</th><th>原始算法</th><th>改进算法</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr><td>sample_104.jpg</td><td>15</td><td>5</td><td>64</td><td>383</td></tr>
+                <tr><td>sample_105.jpg</td><td>42</td><td>8</td><td>38</td><td>395</td></tr>
+                <tr><td>sample_126.jpg</td><td>1</td><td>3</td><td>79</td><td>553</td></tr>
+                <tr><td>sample_143.jpg</td><td>25</td><td>6</td><td>49</td><td>392</td></tr>
+                <tr><td>sample_168.jpg</td><td>29</td><td>5</td><td>49</td><td>532</td></tr>
+                <tr><td>sample_188.jpg</td><td>3</td><td>5</td><td>77</td><td>551</td></tr>
+                <tr><td>sample_206.jpg</td><td>43</td><td>4</td><td>33</td><td>540</td></tr>
+                <tr><td>sample_207.jpg</td><td>5</td><td>11</td><td>73</td><td>78</td></tr>
+                <tr><td>sample_208.jpg</td><td>79</td><td>4</td><td>2</td><td>385</td></tr>
+                <tr><td>sample_217.jpg</td><td>4</td><td>5</td><td>59</td><td>550</td></tr>
+                <tr><td>sample_218.jpg</td><td>17</td><td>6</td><td>70</td><td>545</td></tr>
+                <tr><td>sample_219.jpg</td><td>3</td><td>5</td><td>76</td><td>552</td></tr>
+                <tr><td>sample_220.jpg</td><td>34</td><td>4</td><td>72</td><td>540</td></tr>
+                <tr><td>sample_228.jpg</td><td>24</td><td>4</td><td>55</td><td>516</td></tr>
+                <tr><td>sample_229.jpg</td><td>8</td><td>9</td><td>72</td><td>346</td></tr>
+                <tr><td>sample_3.jpg</td><td>5</td><td>3</td><td>73</td><td>505</td></tr>
+                <tr><td>sample_36.jpg</td><td>2</td><td>8</td><td>76</td><td>380</td></tr>
+                <tr><td>sample_37.jpg</td><td>35</td><td>4</td><td>69</td><td>381</td></tr>
+                <tr><td>sample_42.jpg</td><td>19</td><td>8</td><td>75</td><td>554</td></tr>
+                <tr><td>sample_45.jpg</td><td>6</td><td>5</td><td>71</td><td>376</td></tr>
+                <tr><td>sample_46.jpg</td><td>22</td><td>6</td><td>79</td><td>559</td></tr>
+                <tr><td>sample_47.jpg</td><td>3</td><td>6</td><td>74</td><td>541</td></tr>
+                <tr><td>sample_48.jpg</td><td>7</td><td>5</td><td>71</td><td>538</td></tr>
+                <tr><td>sample_55.jpg</td><td>20</td><td>4</td><td>60</td><td>407</td></tr>
+                <tr><td>sample_58.jpg</td><td>47</td><td>5</td><td>45</td><td>543</td></tr>
+              </tbody>
+              <tfoot><tr><th>平均值</th><th>19.92</th><th>5.52</th><th>62.44</th><th>465.68</th></tr></tfoot>
+            </table>
+          </div>
+        </details>
+      </div>
+    </section>
+
+    <section class="section section-soft" id="gallery">
+      <div class="container">
+        <div class="section-heading section-heading-wide">
+          <span class="eyebrow">04 · ORIGINAL FIGURES</span>
+          <h2>论文原始定性对比图</h2>
+          <p>以下图片均直接从论文 Word 文件中提取，没有使用占位图或重新生成图片。</p>
+        </div>
+
+        <div class="original-gallery">
+          <figure class="media-frame paper-figure">
+            <img src="images/sample-36-comparison.png" alt="论文中建筑与人物样本的四种方法对比" />
+            <figcaption>图 4-1：建筑与人物场景。改进方法降低了人物破坏和局部异常扩展。</figcaption>
+          </figure>
+          <figure class="media-frame paper-figure">
+            <img src="images/sample-105-comparison.png" alt="论文中双人样本的四种方法对比" />
+            <figcaption>图 4-2：复杂人物场景。改进方法减少背景条纹伪影并保持人物结构。</figcaption>
+          </figure>
+          <figure class="media-frame paper-figure">
+            <img src="images/sample-stairs-comparison.png" alt="论文中建筑台阶样本的四种方法对比" />
+            <figcaption>图 4-3：建筑台阶场景。原始算法存在明显集中拉伸，改进结果更自然。</figcaption>
+          </figure>
+          <figure class="media-frame paper-figure">
+            <img src="images/sample-animals-comparison.png" alt="论文中动物样本的四种方法对比" />
+            <figcaption>图 4-4：动物场景。改进方法将扩展区域分散到背景低重要度区域。</figcaption>
+          </figure>
+        </div>
+
+        <div class="subsection-heading">
+          <span>ROI PROTECTION</span>
+          <h3>ROI 区域保护效果</h3>
+          <p>论文说明：未显式开启 ROI 时，人物面部仍可能出现条纹；开启 ROI 后，重要人像得到保护，但扩展纹理会更多集中到非保护区域。</p>
+        </div>
+
+        <div class="roi-grid">
+          <figure class="media-frame paper-figure">
+            <img src="images/roi-without-protection.png" alt="论文中未启用 ROI 区域保护的人像扩展对比" />
+            <figcaption>论文原图：未启用 ROI 保护，改进算法虽减轻破坏，但人物左脸仍有阴影条纹。</figcaption>
+          </figure>
+          <figure class="media-frame paper-figure">
+            <img src="images/roi-with-protection.png" alt="论文中启用 ROI 区域保护的人像扩展对比" />
+            <figcaption>论文原图：启用 ROI 保护后，人物面部恢复正常，扩展伪影主要转移至右侧背景。</figcaption>
+          </figure>
+        </div>
+
+        <div class="subsection-heading">
+          <span>ABLATION STUDY</span>
+          <h3>消融实验</h3>
+          <p>以 sample_45 为例，逐步引入 ROI 能量保护、seam 平滑、列惩罚和多带扩展，观察各模块对结构保持与条纹抑制的贡献。</p>
+        </div>
+
+        <figure class="media-frame paper-figure ablation-figure">
+          <img src="images/ablation-sample45.png" alt="论文中的 sample_45 消融实验原图" />
+          <figcaption>论文原图：sample_45 消融实验，展示各改进模块逐步加入后的效果变化。</figcaption>
+        </figure>
+      </div>
+    </section>
+
+    <section class="section" id="future">
+      <div class="container split-layout">
+        <div class="section-heading sticky-heading">
+          <span class="eyebrow">05 · ROADMAP</span>
+          <h2>总结与未来工作</h2>
+          <p>实验表明，能量加权与路径分布约束能够有效缓解多次 seam 插入产生的局部过度拉伸，并改善重要内容的结构保持效果。</p>
+        </div>
+
+        <div class="roadmap">
+          <article><span>01</span><div><h3>视频内容保持拉伸</h3><p>引入时序一致性约束，避免视频帧间出现 seam 跳变和闪烁。</p></div></article>
+          <article><span>02</span><div><h3>自动 ROI 生成</h3><p>结合目标检测或语义分割模型，自动识别人脸、人物和关键建筑区域。</p></div></article>
+          <article><span>03</span><div><h3>多方向与多尺度扩展</h3><p>从横向扩展推广到纵向、多方向及更复杂比例的图像尺寸调整。</p></div></article>
+          <article><span>04</span><div><h3>GPU 与实时优化</h3><p>通过并行计算、近似搜索和 GPU 加速降低高分辨率图像的处理开销。</p></div></article>
+        </div>
+      </div>
+    </section>
+
+    <section class="team-section">
+      <div class="container team-card">
+        <div><span class="eyebrow">PROJECT TEAM</span><h2>项目成员</h2></div>
+        <div class="team-members">
+          <article><strong>钟冠群</strong><span>202311081007</span></article>
+          <article><strong>吴东恩</strong><span>202311081090</span></article>
+        </div>
+        <a class="button button-primary" href="https://github.com/YOUR_NAME/YOUR_REPO" target="_blank" rel="noreferrer">Open Repository</a>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container footer-wrap">
+      <p>Improved Seam Carving for Content-Aware Image Expansion</p>
+      <p>发布前请将 <code>YOUR_NAME/YOUR_REPO</code> 替换为实际 GitHub 仓库地址。</p>
+    </div>
+  </footer>
+</body>
+</html>
